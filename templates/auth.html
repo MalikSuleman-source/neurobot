@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NeuroBot — {{ mode|capitalize }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #080810; --surface: #0f0f1a; --surface2: #151525;
+            --border: rgba(255,255,255,0.07); --accent: #7c6aff; --accent2: #a78bfa;
+            --text: #e8e8f0; --text2: #9898b8; --muted: #4a4a6a;
+            --green: #4ade80; --red: #f87171;
+            --user-bubble: linear-gradient(135deg, #7c6aff, #4f46e5);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Outfit', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+
+        .bg-glow {
+            position: fixed; inset: 0; pointer-events: none;
+            background: radial-gradient(ellipse 60% 50% at 50% 0%, rgba(124,106,255,0.15) 0%, transparent 70%);
+        }
+
+        .card {
+            background: var(--surface); border: 1px solid var(--border);
+            border-radius: 20px; padding: 40px; width: 380px; max-width: 95vw;
+            box-shadow: 0 20px 80px rgba(0,0,0,0.5); position: relative; z-index: 1;
+        }
+
+        .logo { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
+        .logo-icon { width: 40px; height: 40px; background: var(--user-bubble); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+        .logo-name { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; }
+
+        h2 { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 800; margin-bottom: 6px; }
+        .subtitle { color: var(--text2); font-size: 13px; margin-bottom: 28px; }
+
+        .field { margin-bottom: 16px; }
+        .field label { display: block; font-size: 12px; color: var(--text2); margin-bottom: 6px; font-weight: 500; letter-spacing: 0.5px; }
+        .field input {
+            width: 100%; padding: 11px 14px;
+            background: var(--surface2); border: 1.5px solid var(--border);
+            border-radius: 10px; color: var(--text); font-size: 14px;
+            font-family: 'Outfit', sans-serif; outline: none; transition: border-color 0.2s;
+        }
+        .field input:focus { border-color: rgba(124,106,255,0.5); }
+        .field input::placeholder { color: var(--muted); }
+
+        .submit-btn {
+            width: 100%; padding: 12px;
+            background: var(--user-bubble); border: none;
+            border-radius: 10px; color: white; font-size: 15px;
+            font-family: 'Outfit', sans-serif; font-weight: 600;
+            cursor: pointer; transition: opacity 0.2s; margin-top: 8px;
+        }
+        .submit-btn:hover { opacity: 0.88; }
+        .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .error-msg { background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.25); border-radius: 8px; padding: 10px 14px; font-size: 13px; color: var(--red); margin-bottom: 16px; display: none; }
+        .error-msg.show { display: block; }
+
+        .switch-link { text-align: center; margin-top: 20px; font-size: 13px; color: var(--text2); }
+        .switch-link a { color: var(--accent2); text-decoration: none; font-weight: 500; }
+        .switch-link a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+<div class="bg-glow"></div>
+
+<div class="card">
+    <div class="logo">
+        <div class="logo-icon">🤖</div>
+        <span class="logo-name">NeuroBot</span>
+    </div>
+
+    {% if mode == 'login' %}
+    <h2>Welcome back</h2>
+    <p class="subtitle">Sign in to your account to continue</p>
+    <div class="error-msg" id="errMsg"></div>
+    <div class="field"><label>USERNAME</label><input type="text" id="username" placeholder="your_username" autocomplete="username"></div>
+    <div class="field"><label>PASSWORD</label><input type="password" id="password" placeholder="••••••••" autocomplete="current-password"></div>
+    <button class="submit-btn" id="submitBtn" onclick="doLogin()">Sign In</button>
+    <div class="switch-link">Don't have an account? <a href="/register_page">Create one</a></div>
+
+    {% else %}
+    <h2>Create account</h2>
+    <p class="subtitle">Join NeuroBot and start chatting</p>
+    <div class="error-msg" id="errMsg"></div>
+    <div class="field"><label>USERNAME</label><input type="text" id="username" placeholder="your_username" autocomplete="username"></div>
+    <div class="field"><label>EMAIL</label><input type="email" id="email" placeholder="you@example.com" autocomplete="email"></div>
+    <div class="field"><label>PASSWORD</label><input type="password" id="password" placeholder="Min 6 characters" autocomplete="new-password"></div>
+    <button class="submit-btn" id="submitBtn" onclick="doRegister()">Create Account</button>
+    <div class="switch-link">Already have an account? <a href="/login_page">Sign in</a></div>
+    {% endif %}
+</div>
+
+<script>
+    // Enter key support
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            {% if mode == 'login' %}doLogin();{% else %}doRegister();{% endif %}
+        }
+    });
+
+    function showError(msg) {
+        const el = document.getElementById('errMsg');
+        el.textContent = msg;
+        el.classList.add('show');
+    }
+
+    async function doLogin() {
+        const username = document.getElementById('username').value.trim();
+        const password = document.getElementById('password').value;
+        if (!username || !password) { showError('Please fill all fields'); return; }
+
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true; btn.textContent = 'Signing in...';
+
+        const res = await fetch('/api/login', {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        if (res.ok) { window.location.href = '/'; }
+        else { showError(data.error || 'Login failed'); btn.disabled = false; btn.textContent = 'Sign In'; }
+    }
+
+    async function doRegister() {
+        const username = document.getElementById('username').value.trim();
+        const email    = document.getElementById('email').value.trim();
+        const password = document.getElementById('password').value;
+        if (!username || !email || !password) { showError('Please fill all fields'); return; }
+
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true; btn.textContent = 'Creating account...';
+
+        const res = await fetch('/api/register', {
+            method: 'POST', headers: {'Content-Type':'application/json'},
+            body: JSON.stringify({ username, email, password })
+        });
+        const data = await res.json();
+        if (res.ok) { window.location.href = '/'; }
+        else { showError(data.error || 'Registration failed'); btn.disabled = false; btn.textContent = 'Create Account'; }
+    }
+</script>
+</body>
+</html>
